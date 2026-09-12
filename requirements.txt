@@ -1,0 +1,13 @@
+# 阿德勒自我探索 Skill - Python 依赖清单
+#
+# 本文件固定了项目所需的 Python 依赖版本，
+# 确保在不同环境（开发、测试、上架）中能够稳定复现。
+#
+# 安装方式：
+#   pip install -r requirements.txt
+#
+
+# 加密存储依赖
+# 用于 Fernet 对称加密（AES-128-CBC + HMAC-SHA256）
+# 和基于用户密码派生密钥（PBKDF2-HMAC-SHA256）
+cryptography==50.0.1
