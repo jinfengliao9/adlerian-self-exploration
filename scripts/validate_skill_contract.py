@@ -21,6 +21,7 @@ if sys.platform == "win32":
 
 
 ROOT = Path(__file__).resolve().parents[1]
+NON_PRODUCT_MARKDOWN_FILES = {"COLLAB.md"}
 
 # === 原有检查配置 ===
 REQUIRED_FILES = (
@@ -134,11 +135,13 @@ def check_router_labels() -> None:
 # ============================================================
 
 def find_markdown_files() -> list[Path]:
-    """递归查找项目中所有 .md 文件（排除 .git、storage/data 和 outputs）。"""
+    """递归查找产品 Markdown（排除协作记录、.git、运行时数据和输出）。"""
     md_files: list[Path] = []
     for path in ROOT.rglob("*.md"):
         # 排除 .git 目录
         if ".git" in path.parts:
+            continue
+        if path.relative_to(ROOT).as_posix() in NON_PRODUCT_MARKDOWN_FILES:
             continue
         # 排除 storage/data 目录（运行时生成的用户数据）
         rel_parts = path.relative_to(ROOT).parts
@@ -227,6 +230,8 @@ INLINE_PATH_PATTERN = re.compile(
 )
 # 命中这些标记的行属于"已废弃/历史说明"语境，其中缺失的路径不报错
 RETIRED_CONTEXT_MARKERS = ("~~", "已废弃", "已删除", "曾为", "不再使用", "历史")
+# 这些目录由 Skill 在首次使用或导出时创建，不应要求作为发布包内的静态文件存在。
+RUNTIME_GENERATED_PATH_PREFIXES = ("storage/data/", "outputs/")
 
 
 def _is_runtime_doc(md_file: Path) -> bool:
@@ -235,6 +240,12 @@ def _is_runtime_doc(md_file: Path) -> bool:
     if rel.name in ("SKILL.md", "README.md"):
         return True
     return bool(rel.parts) and rel.parts[0] in RUNTIME_SCAN_DIRS
+
+
+def _is_runtime_generated_path(relative_path: str) -> bool:
+    """判断路径是否为首次使用或导出时生成的运行时产物。"""
+    normalized = relative_path.replace("\\", "/")
+    return normalized.startswith(RUNTIME_GENERATED_PATH_PREFIXES)
 
 
 def check_inline_code_paths() -> None:
@@ -252,6 +263,8 @@ def check_inline_code_paths() -> None:
                 continue
             for raw in INLINE_PATH_PATTERN.findall(line):
                 rel_path = raw.strip().split("#")[0]
+                if _is_runtime_generated_path(rel_path):
+                    continue
                 if (md_file.parent / rel_path).exists() or (ROOT / rel_path).exists():
                     continue
                 add_failure(f"代码样式路径不存在：{relative_md}:L{idx} -> `{raw}`（目标文件缺失）")
