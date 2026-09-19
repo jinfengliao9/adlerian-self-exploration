@@ -35,3 +35,6 @@ desktop.ini
 
 # 内部开发节点文档：只在本地维护，不上传开源仓库（含本机路径与开发记录）
 AGENTS.md
+
+# 豆包-Codex 本地协作板，不公开
+COLLAB.md
